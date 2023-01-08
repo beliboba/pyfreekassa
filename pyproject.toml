@@ -1,25 +1,3 @@
 [build-system]
 requires = ["setuptools", "setuptools_scm[toml]>=7.1.0", "wheel"]
 build-backend = "setuptools.build_meta"
-
-[project]
-name = "pyfreekassa"
-version = "1.0.0"
-description = "Python FreeKassa api wrapper"
-readme = "README.md"
-authors = "Beliboba"
-license = { file = "LICENSE" }
-classifiers = [
-    "License :: OSI Approved :: MIT License",
-    "Programming Language :: Python",
-    "Programming Language :: Python :: 3",
-]
-keywords = ["freekassa", "wrapper", "api", "client"]
-dependencies = [
-    "aiohttp",
-    "aiofiles",
-]
-requires-python = ">=3.6"
-
-[project.urls]
-Homepage = "https://github.com/beliboba/pyfreekassa"

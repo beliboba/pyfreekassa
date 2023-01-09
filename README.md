@@ -28,4 +28,6 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
+## [Documentation](https://pyfreekassa.readthedocs.io/en/latest/index.html)
+
 ## Feel free to contribute.

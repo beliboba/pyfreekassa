@@ -1,1 +1,1 @@
-from .pyfreekassa import Nonce, OrderId, Currencies, Configuration, FrekassaApi
+from .pyfreekassa import Nonce, OrderId, Currencies, Configuration, FreekassaApi

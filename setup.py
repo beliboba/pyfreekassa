@@ -18,7 +18,7 @@ setup(
 
 	packages=find_packages(exclude=['tests', 'docs']),
 
-	install_requires=['aiofiles', 'aiohttp'],
+	install_requires=['aiofiles', 'aiohttp', 'myst_parser'],
 
 	python_requires='>3.6',
 

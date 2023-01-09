@@ -62,8 +62,7 @@ class Nonce:
 
 
 class OrderId:
-	"""
-	Class used to generate order_id for payments
+	"""Class used to generate order_id for payments
 	"""
 	class Methods:
 		random_int = 1
@@ -72,10 +71,12 @@ class OrderId:
 		custom = 4
 
 	def generate(self, custom_text: str = None) -> str or int:
-		"""
-		Generates order_id depending on chosed method
-		:param custom_text: Provide this parameter if you want to use custom method. It will be used as order_id
-		:return:
+		"""Generates order_id depending on chosed method
+
+		Args:
+			custom_text: Provide this parameter if you want to use custom method. It will be used as order_id
+		Returns:
+			Generated order_id
 		"""
 		if self.method == self.Methods.random_int:
 			return random.randint(0, 2 ** 32)
@@ -91,8 +92,7 @@ class OrderId:
 
 
 class Currencies:
-	"""
-	All currencies available in FreeKassa
+	"""All currencies available in FreeKassa
 	"""
 
 	class FKwallet:
@@ -161,37 +161,60 @@ class Configuration:
 			setattr(cls, key, value)
 
 
-class FrekassaApi:
+class FreekassaApi:
 	__payment_form_url = "https://pay.freekassa.ru/"
 	__base_api_url = "https://api.freekassa.ru/v1/"
 
-	def generate_signature(self, signature_type: str = "form") -> str:
+	def generate_signature(self, signature_type: str, request_params: dict = None, order_id: int or str = None) -> str:
+		"""Generates signature for payment form
+
+		Args:
+
+			signature_type: Type of signature. Can be "form", "wallet", "api"
+			request_params: dict of parameters
+			order_id: order_id of payment
+
+		Returns:
+			Generated signature str
 		"""
-		Generates signature for payment form
-		:param signature_type: determines which list of params will be used. Can be "form"
-		"""
+		if self.method != OrderId.Methods.custom or order_id is None:
+			order_id = OrderId(self.method).generate()
 		if signature_type == "form":
-			params = [self.config.merchant_id, self.payment_amount, self.config.first_secret, self.payment_currency, self.order_id]
+			params = [self.config.merchant_id, request_params["payment_amount"], self.config.first_secret, request_params["payment_currency"], order_id]
+			params = [str(param) for param in params]
+			sign = ':'.join(params)
+			return hashlib.md5(sign.encode('utf-8')).hexdigest()
+		else:
+			keys = list(request_params.keys())
+			params = []
+			for key in keys:
+				params.append(str(request_params[key]))
+			separated_params = ':'.join(params)
+			return hashlib.md5(separated_params.encode('utf-8')).hexdigest()
 
-		params = [str(param) for param in params]
-		sign = ':'.join(params)
-		return hashlib.md5(sign.encode('utf-8')).hexdigest()
+	async def get_form_url(self, payment_amount: float, payment_currency: str, suggested_currency: int, phone: str, email: str, lang: str, order_id: str or int = None) -> str:
+		"""Generates payment url
 
-	async def get_form_url(self, payment_amount: float, payment_currency: str, suggested_currency: int, phone: str, email: str, lang: str) -> str:
+		Args:
+
+			payment_amount: payment amount.
+			payment_currency: payment currency. Can be RUB, USD, EUR, UAH, KZT
+			suggested_currency: currency id. This currency will be suggested to user. User can choose another currency.
+			phone: user phone number
+			email: user email
+			lang: language of payment form. Can be "ru" or "en"
+			order_id: Pass this if you use OrderId.Methods.custom
+
+		Returns:
+			Generated payment url str
 		"""
-		Generates payment url
-		:param payment_amount: payment amount.
-		:param payment_currency: payment currency. Can be RUB, USD, EUR, UAH, KZT
-		:param suggested_currency: currency id. This currency will be suggested to user. User can choose another currency.
-		:param phone: user phone number
-		:param email: user email
-		:param lang: language of payment form. Can be "ru" or "en"
-		"""
+		if self.method != OrderId.Methods.custom or order_id is None:
+			order_id = OrderId(self.method).generate()
 		params = {
 			"m": self.config.merchant_id,
 			"oa": payment_amount,
 			"currency": payment_currency,
-			"o": self.order_id,
+			"o": order_id,
 			"s": self.generate_signature("form"),
 			"i": suggested_currency,
 			"phone": phone,
@@ -209,21 +232,22 @@ class FrekassaApi:
 			dateto: str = None,
 			page: int = None
 	) -> dict:
-		"""
-		Returns order list
-		❌HAS NOT BEEN TESTED❌
-		:param order_id: Order ID
-		:param payment_id: Payment ID
-		:param orderstatus: Order status
-		:param datefrom: Date from
-		:param dateto: Date to
-		:param page: Page number
-		:return: dict
+		"""Returns order list ❌HAS NOT BEEN TESTED❌
+
+		Args:
+			order_id: Order ID
+			payment_id: Payment ID
+			orderstatus: Order status
+			datefrom: Date from
+			dateto: Date to
+			page: Page number
+
+		Returns:
+			dict of orders
 		"""
 		params = {
 			"shopId": self.config.merchant_id,
 			"nonce": await Nonce.generate(method=self.config.nonce_generation_method, path=self.config.nonce_path),
-			"signature": self.generate_signature(self.config.wallet_api_key),
 			"orderId": order_id,
 			"paymentId": payment_id,
 			"orderStatus": orderstatus,
@@ -231,6 +255,7 @@ class FrekassaApi:
 			"dateTo": dateto,
 			"page": page
 		}
+		params["signature"] = self.generate_signature(signature_type="", request_params=params)
 		async with aiohttp.ClientSession() as session:
 			async with session.post(self.__base_api_url + 'orders', params=params) as response:
 				rjson = await response.json()
@@ -252,24 +277,26 @@ class FrekassaApi:
 			failure_url: str = None,
 			notification_url: str = None,
 	) -> dict:
-		"""
-		Creates order
-		❌HAS NOT BEEN TESTED❌
-		:param payment_id: Payment ID
-		:param payment_system: Payment system. Use Currencies class!
-		:param email: User email
-		:param ip: User IP
-		:param payment_amount: Payment amount
-		:param payment_currency: Payment currency. Can be RUB, USD, EUR, UAH, KZT
-		:param phone: User phone number
-		:param success_url: Url to redirect user after successful payment. ASK FREEKASSA SUPPORT TO ENABLE THIS FEATURE
-		:param failure_url: Url to redirect user after failed payment. ASK FREEKASSA SUPPORT TO ENABLE THIS FEATURE
-		:param notification_url: Url to send notification to. ASK FREEKASSA SUPPORT TO ENABLE THIS FEATURE
+		"""Creates order ❌HAS NOT BEEN TESTED❌
+
+		Args:
+			payment_id: Payment ID
+			payment_system: Payment system. Use Currencies class!
+			email: User email
+			ip: User IP
+			payment_amount: Payment amount
+			payment_currency: Payment currency. Can be RUB, USD, EUR, UAH, KZT
+			phone: User phone number
+			success_url: Url to redirect user after successful payment. ASK FREEKASSA SUPPORT TO ENABLE THIS FEATURE
+			failure_url: Url to redirect user after failed payment. ASK FREEKASSA SUPPORT TO ENABLE THIS FEATURE
+			notification_url: Url to send notification to. ASK FREEKASSA SUPPORT TO ENABLE THIS FEATURE
+
+		Returns:
+			dict with orderId, orderHash and location (url)
 		"""
 		params = {
 			"shopId": self.config.merchant_id,
 			"nonce": await Nonce.generate(method=self.config.nonce_generation_method, path=self.config.nonce_path),
-			"signature": self.generate_signature(self.config.wallet_api_key),
 			"paymentId": payment_id,
 			"i": payment_system,
 			"email": email,
@@ -281,6 +308,7 @@ class FrekassaApi:
 			"failure_url": failure_url,
 			"notification_url": notification_url
 		}
+		params["signature"] = self.generate_signature(signature_type="", request_params=params)
 		async with aiohttp.ClientSession() as session:
 			async with session.post(self.__base_api_url + 'orders/create', params=params) as response:
 				rjson = await response.json()
@@ -302,21 +330,22 @@ class FrekassaApi:
 			dateto: str = None,
 			page: int = None
 	) -> dict:
-		"""
-		Returns payouts list
-		❌HAS NOT BEEN TESTED❌
-		:param order_id: Order ID
-		:param payment_id: Payment ID
-		:param orderstatus: Order status
-		:param datefrom: Date from
-		:param dateto: Date to
-		:param page: Page number
-		:return: dict
+		"""Returns payouts list ❌HAS NOT BEEN TESTED❌
+
+		Args:
+			order_id: Order ID
+			payment_id: Payment ID
+			orderstatus: Order status
+			datefrom: Date from
+			dateto: Date to
+			page: Page number
+
+		Returns:
+			dict of payouts
 		"""
 		params = {
 			"shopId": self.config.merchant_id,
 			"nonce": await Nonce.generate(method=self.config.nonce_generation_method, path=self.config.nonce_path),
-			"signature": self.generate_signature(self.config.wallet_api_key),
 			"orderId": order_id,
 			"paymentId": payment_id,
 			"orderStatus": orderstatus,
@@ -324,6 +353,7 @@ class FrekassaApi:
 			"dateTo": dateto,
 			"page": page
 		}
+		params["signature"] = self.generate_signature(signature_type="", request_params=params)
 		async with aiohttp.ClientSession() as session:
 			async with session.post(self.__base_api_url + 'withdrawals', params=params) as response:
 				rjson = await response.json()
@@ -343,22 +373,22 @@ class FrekassaApi:
 		"""
 		Creates payout
 		❌HAS NOT BEEN TESTED❌
-		:param payment_id: Payment ID
-		:param payment_system: Payment system. Use Currencies class!
-		:param account: Account to send money to. Can be phone number, card number depending on payment system. If payment system is FKWallet money can be sent only to your own wallet (owner of shop I think)
-		:param payout_amount: Payout amount
-		:param payout_currency: Payout currency. Can be RUB, USD, EUR, UAH, KZT !NOT SURE!
+			payment_id: Payment ID
+			payment_system: Payment system. Use Currencies class!
+			account: Account to send money to. Can be phone number, card number depending on payment system. If payment system is FKWallet money can be sent only to your own wallet (owner of shop I think)
+			payout_amount: Payout amount
+			payout_currency: Payout currency. Can be RUB, USD, EUR, UAH, KZT !NOT SURE!
 		"""
 		params = {
 			"shopId": self.config.merchant_id,
 			"nonce": await Nonce.generate(method=self.config.nonce_generation_method, path=self.config.nonce_path),
-			"signature": self.generate_signature(self.config.wallet_api_key),
 			"paymentId": payment_id,
 			"i": payment_system,
 			"account": account,
 			"amount": payout_amount,
 			"currency": payout_currency
 		}
+		params["signature"] = self.generate_signature(signature_type="", request_params=params)
 		async with aiohttp.ClientSession() as session:
 			async with session.post(self.__base_api_url + 'withdrawals/create', params=params) as response:
 				rjson = await response.json()
@@ -374,8 +404,8 @@ class FrekassaApi:
 		params = {
 			"shopId": self.config.merchant_id,
 			"nonce": await Nonce.generate(method=self.config.nonce_generation_method, path=self.config.nonce_path),
-			"signature": self.generate_signature(self.config.wallet_api_key)
 		}
+		params["signature"] = self.generate_signature(signature_type="", request_params=params)
 		async with aiohttp.ClientSession() as session:
 			async with session.post(self.__base_api_url + 'balance', params=params) as response:
 				rjson = await response.json()
@@ -390,9 +420,9 @@ class FrekassaApi:
 		"""
 		params = {
 			"shopId": self.config.merchant_id,
-			"nonce": await Nonce.generate(method=self.config.nonce_generation_method, path=self.config.nonce_path),
-			"signature": self.generate_signature(self.config.wallet_api_key)
+			"nonce": await Nonce.generate(method=self.config.nonce_generation_method, path=self.config.nonce_path)
 		}
+		params["signature"] = self.generate_signature(signature_type="", request_params=params)
 		async with aiohttp.ClientSession() as session:
 			async with session.post(self.__base_api_url + 'currencies', params=params) as response:
 				rjson = await response.json()
@@ -404,14 +434,14 @@ class FrekassaApi:
 	async def check_payment_system(self, payment_system: int) -> bool:
 		"""
 		Checks if payment system is available
-		:param payment_system: Payment system to check. You can use Currencies class!
+			payment_system: Payment system to check. You can use Currencies class!
 		:return: Boolean [ True - available | False - unavailable ]
 		"""
 		params = {
 			"shopId": self.config.merchant_id,
 			"nonce": await Nonce.generate(method=self.config.nonce_generation_method, path=self.config.nonce_path),
-			"signature": self.generate_signature(self.config.wallet_api_key)
 		}
+		params["signature"] = self.generate_signature(signature_type="", request_params=params)
 		async with aiohttp.ClientSession() as session:
 			async with session.post(self.__base_api_url + f'currencies/{payment_system}/status', params=params) as response:
 				rjson = await response.json()
@@ -426,9 +456,9 @@ class FrekassaApi:
 		"""
 		params = {
 			"shopId": self.config.merchant_id,
-			"nonce": await Nonce.generate(method=self.config.nonce_generation_method, path=self.config.nonce_path),
-			"signature": self.generate_signature(self.config.wallet_api_key)
+			"nonce": await Nonce.generate(method=self.config.nonce_generation_method, path=self.config.nonce_path)
 		}
+		params["signature"] = self.generate_signature(signature_type="", request_params=params)
 		async with aiohttp.ClientSession() as session:
 			async with session.post(self.__base_api_url + 'withdrawals/currencies', params=params) as response:
 				rjson = await response.json()
@@ -443,9 +473,9 @@ class FrekassaApi:
 		"""
 		params = {
 			"shopId": self.config.merchant_id,
-			"nonce": await Nonce.generate(method=self.config.nonce_generation_method, path=self.config.nonce_path),
-			"signature": self.generate_signature(self.config.wallet_api_key)
+			"nonce": await Nonce.generate(method=self.config.nonce_generation_method, path=self.config.nonce_path)
 		}
+		params["signature"] = self.generate_signature(signature_type="", request_params=params)
 		async with aiohttp.ClientSession() as session:
 			async with session.post(self.__base_api_url + 'shops', params=params) as response:
 				rjson = await response.json()
@@ -458,13 +488,8 @@ class FrekassaApi:
 			self,
 			config: Configuration,
 			wallet_id: int,
-			payment_order_id: int or str,
-			method: int = OrderId.Methods.random_int,
+			method: int = OrderId.Methods.random_int
 	):
 		self.config = config
-
+		self.method = method
 		self.wallet_id = wallet_id
-		self.order_id = OrderId(method).generate()
-
-		if method == OrderId.Methods.custom:
-			self.order_id = payment_order_id

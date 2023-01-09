@@ -8,7 +8,7 @@
  
 ## Usage example:
 ```python
-from pyfreekassa import Configuration, FrekassaApi, Nonce
+from pyfreekassa import Configuration, FreekassaApi, Nonce
 import asyncio
 
 Configuration.configure(
@@ -19,7 +19,7 @@ Configuration.configure(
     nonce_generation_method = Nonce.Methods.TXT,
     nonce_path = "nonce.txt"
 )
-fk = FrekassaApi(config=Configuration(), payment_order_id="12345", wallet_id=1)
+fk = FreekassaApi(config=Configuration(), wallet_id=1)
 
 async def main():
     print(await fk.get_payment_systems())

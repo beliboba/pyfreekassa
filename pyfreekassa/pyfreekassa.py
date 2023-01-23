@@ -255,14 +255,13 @@ class FreekassaApi:
         }
         params["signature"] = self.generate_signature(
             signature_type="", request_params=params)
-        async with aiohttp.ClientSession() as session:
-            async with session.post(self.__base_api_url + 'orders', params=params) as response:
-                rjson = await response.json()
-                if rjson["type"] == "success":
-                    return rjson["orders"]
-                else:
-                    raise ValueError(
-                        "Freekassa API returned error. Try checking args")
+        async with aiohttp.ClientSession() as session, session.post(self.__base_api_url + 'orders', params=params) as response:
+            rjson = await response.json()
+            if rjson["type"] == "success":
+                return rjson["orders"]
+            else:
+                raise ValueError(
+                    "Freekassa API returned error. Try checking args")
 
     async def create_order(
         self,
@@ -310,18 +309,17 @@ class FreekassaApi:
         }
         params["signature"] = self.generate_signature(
             signature_type="", request_params=params)
-        async with aiohttp.ClientSession() as session:
-            async with session.post(self.__base_api_url + 'orders/create', params=params) as response:
-                rjson = await response.json()
-                if rjson["type"] == "success":
-                    return {
-                        "orderId": rjson["orderId"],
-                        "orderHash": rjson["paymentId"],
-                        "location": rjson["location"]
-                    }
-                else:
-                    raise ValueError(
-                        "Freekassa API returned error. Try checking args")
+        async with aiohttp.ClientSession() as session, session.post(self.__base_api_url + 'orders/create', params=params) as response:
+            rjson = await response.json()
+            if rjson["type"] == "success":
+                return {
+                    "orderId": rjson["orderId"],
+                    "orderHash": rjson["paymentId"],
+                    "location": rjson["location"]
+                }
+            else:
+                raise ValueError(
+                    "Freekassa API returned error. Try checking args")
 
     async def get_payouts_list(
         self,
@@ -357,14 +355,13 @@ class FreekassaApi:
         }
         params["signature"] = self.generate_signature(
             signature_type="", request_params=params)
-        async with aiohttp.ClientSession() as session:
-            async with session.post(self.__base_api_url + 'withdrawals', params=params) as response:
-                rjson = await response.json()
-                if rjson["type"] == "success":
-                    return rjson["orders"]
-                else:
-                    raise ValueError(
-                        "Freekassa API returned error. Try checking args")
+        async with aiohttp.ClientSession() as session, session.post(self.__base_api_url + 'withdrawals', params=params) as response:
+            rjson = await response.json()
+            if rjson["type"] == "success":
+                return rjson["orders"]
+            else:
+                raise ValueError(
+                    "Freekassa API returned error. Try checking args")
 
     async def create_payout(
         self,
@@ -394,14 +391,13 @@ class FreekassaApi:
         }
         params["signature"] = self.generate_signature(
             signature_type="", request_params=params)
-        async with aiohttp.ClientSession() as session:
-            async with session.post(self.__base_api_url + 'withdrawals/create', params=params) as response:
-                rjson = await response.json()
-                if rjson["type"] == "success":
-                    return rjson["data"]
-                else:
-                    raise ValueError(
-                        "Freekassa API returned error. Try checking args")
+        async with aiohttp.ClientSession() as session, session.post(self.__base_api_url + 'withdrawals/create', params=params) as response:
+            rjson = await response.json()
+            if rjson["type"] == "success":
+                return rjson["data"]
+            else:
+                raise ValueError(
+                    "Freekassa API returned error. Try checking args")
 
     async def get_balance(self) -> dict:
         """Returns shop (merchant) balance."""
@@ -411,14 +407,13 @@ class FreekassaApi:
         }
         params["signature"] = self.generate_signature(
             signature_type="", request_params=params)
-        async with aiohttp.ClientSession() as session:
-            async with session.post(self.__base_api_url + 'balance', params=params) as response:
-                rjson = await response.json()
-                if rjson["type"] == "success":
-                    return rjson["balance"]
-                else:
-                    raise ValueError(
-                        "Freekassa API returned error. Try checking args")
+        async with aiohttp.ClientSession() as session, session.post(self.__base_api_url + 'balance', params=params) as response:
+            rjson = await response.json()
+            if rjson["type"] == "success":
+                return rjson["balance"]
+            else:
+                raise ValueError(
+                    "Freekassa API returned error. Try checking args")
 
     async def get_payment_systems(self) -> dict:
         """Returns payment systems"""
@@ -428,14 +423,13 @@ class FreekassaApi:
         }
         params["signature"] = self.generate_signature(
             signature_type="", request_params=params)
-        async with aiohttp.ClientSession() as session:
-            async with session.post(self.__base_api_url + 'currencies', params=params) as response:
-                rjson = await response.json()
-                if rjson["type"] == "success":
-                    return rjson["currencies"]
-                else:
-                    raise ValueError(
-                        "Freekassa API returned error. Try checking args")
+        async with aiohttp.ClientSession() as session, session.post(self.__base_api_url + 'currencies', params=params) as response:
+            rjson = await response.json()
+            if rjson["type"] == "success":
+                return rjson["currencies"]
+            else:
+                raise ValueError(
+                    "Freekassa API returned error. Try checking args")
 
     async def check_payment_system(self, payment_system: int) -> bool:
         """
@@ -449,13 +443,12 @@ class FreekassaApi:
         }
         params["signature"] = self.generate_signature(
             signature_type="", request_params=params)
-        async with aiohttp.ClientSession() as session:
-            async with session.post(self.__base_api_url + f'currencies/{payment_system}/status', params=params) as response:
-                rjson = await response.json()
-                if rjson["type"] == "success":
-                    return True
-                else:
-                    return False
+        async with aiohttp.ClientSession() as session, session.post(self.__base_api_url + f'currencies/{payment_system}/status', params=params) as response:
+            rjson = await response.json()
+            if rjson["type"] == "success":
+                return True
+            else:
+                return False
 
     async def get_available_payment_systems(self):
         """Returns all payment systems that are currently available for payouts"""
@@ -465,14 +458,13 @@ class FreekassaApi:
         }
         params["signature"] = self.generate_signature(
             signature_type="", request_params=params)
-        async with aiohttp.ClientSession() as session:
-            async with session.post(self.__base_api_url + 'withdrawals/currencies', params=params) as response:
-                rjson = await response.json()
-                if rjson["type"] == "success":
-                    return rjson["currencies"]
-                else:
-                    raise ValueError(
-                        "Freekassa API returned error. Try checking args")
+        async with aiohttp.ClientSession() as session, session.post(self.__base_api_url + 'withdrawals/currencies', params=params) as response:
+            rjson = await response.json()
+            if rjson["type"] == "success":
+                return rjson["currencies"]
+            else:
+                raise ValueError(
+                    "Freekassa API returned error. Try checking args")
 
     async def get_shops(self):
         """Returns all your shops"""
@@ -482,14 +474,13 @@ class FreekassaApi:
         }
         params["signature"] = self.generate_signature(
             signature_type="", request_params=params)
-        async with aiohttp.ClientSession() as session:
-            async with session.post(self.__base_api_url + 'shops', params=params) as response:
-                rjson = await response.json()
-                if rjson["type"] == "success":
-                    return rjson["shops"]
-                else:
-                    raise ValueError(
-                        "Freekassa API returned error. Try checking args")
+        async with aiohttp.ClientSession() as session, session.post(self.__base_api_url + 'shops', params=params) as response:
+            rjson = await response.json()
+            if rjson["type"] == "success":
+                return rjson["shops"]
+            else:
+                raise ValueError(
+                    "Freekassa API returned error. Try checking args")
 
     def __init__(
         self,

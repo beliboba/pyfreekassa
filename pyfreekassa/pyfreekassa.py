@@ -17,9 +17,7 @@ class Nonce:
 
 	class Methods:
 		class Method:
-			"""
-			DO NOT USE THIS CLASS
-			"""
+			"""DO NOT USE THIS CLASS"""
 			def __init__(self, file_extension: str) -> None:
 				self.ext = file_extension
 
@@ -62,8 +60,7 @@ class Nonce:
 
 
 class OrderId:
-	"""Class used to generate order_id for payments
-	"""
+	"""Class used to generate order_id for payments"""
 	class Methods:
 		random_int = 1
 		time_hash = 2
@@ -92,8 +89,7 @@ class OrderId:
 
 
 class Currencies:
-	"""All currencies available in FreeKassa
-	"""
+	"""All currencies available in FreeKassa"""
 
 	class FKwallet:
 		RUB = 1
@@ -398,9 +394,7 @@ class FreekassaApi:
 					raise ValueError("Freekassa API returned error. Try checking args")
 
 	async def get_balance(self) -> dict:
-		"""
-		Returns shop (merchant) balance.
-		"""
+		"""Returns shop (merchant) balance."""
 		params = {
 			"shopId": self.config.merchant_id,
 			"nonce": await Nonce.generate(method=self.config.nonce_generation_method, path=self.config.nonce_path),
@@ -415,9 +409,7 @@ class FreekassaApi:
 					raise ValueError("Freekassa API returned error. Try checking args")
 
 	async def get_payment_systems(self) -> dict:
-		"""
-		Returns payment systems
-		"""
+		"""Returns payment systems"""
 		params = {
 			"shopId": self.config.merchant_id,
 			"nonce": await Nonce.generate(method=self.config.nonce_generation_method, path=self.config.nonce_path)
@@ -451,9 +443,7 @@ class FreekassaApi:
 					return False
 
 	async def get_available_payment_systems(self):
-		"""
-		Returns all payment systems that are currently available for payouts
-		"""
+		"""Returns all payment systems that are currently available for payouts"""
 		params = {
 			"shopId": self.config.merchant_id,
 			"nonce": await Nonce.generate(method=self.config.nonce_generation_method, path=self.config.nonce_path)
@@ -468,9 +458,7 @@ class FreekassaApi:
 					raise ValueError("Freekassa API returned error. Try checking args")
 
 	async def get_shops(self):
-		"""
-		Returns all your shops
-		"""
+		"""Returns all your shops"""
 		params = {
 			"shopId": self.config.merchant_id,
 			"nonce": await Nonce.generate(method=self.config.nonce_generation_method, path=self.config.nonce_path)
